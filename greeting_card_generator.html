@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Greeting Card Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel,
+    .preview-box {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      color: #111827;
+    }
+
+    .hint {
+      margin: 0 0 22px;
+      color: #6b7280;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 16px;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #111827;
+      color: #fff;
+    }
+
+    .note {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 16px;
+      line-height: 1.7;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="panel">
+      <h1>كارت معايدة الشركة</h1>
+      <p class="hint">اكتب الاسم، اختار اللغة، وبعدها نزّل الكارت مباشرة كصورة PNG.</p>
+
+      <label for="employeeName">اسم الموظف</label>
+      <input id="employeeName" type="text" placeholder="مثال: Tarek Abdelmageed" autocomplete="name" />
+
+      <label for="language">لغة الكارت</label>
+      <select id="language">
+        <option value="ar">عربي</option>
+        <option value="en">English</option>
+      </select>
+
+      <button class="primary" onclick="generateCard()">إنشاء الكارت</button>
+      <button class="secondary" onclick="downloadCard()">تحميل الكارت PNG</button>
+
+      <p class="note">
+        لتغيير التصميم: عدّل مسار <b>BACKGROUND_IMAGE</b> أو <b>LOGO_IMAGE</b> من أول كود JavaScript.
+      </p>
+    </section>
+
+    <section class="preview-box">
+      <canvas id="cardCanvas" width="1600" height="1000"></canvas>
+    </section>
+  </main>
+
+  <script>
+    /*********************************************************
+     * غيّر المسارات دي حسب ملفاتك
+     * ممكن تحط الصور جنب ملف HTML بنفس الأسماء
+     *********************************************************/
+    const BACKGROUND_IMAGE = "card-background.jpg";
+    const LOGO_IMAGE = "logo.png";
+
+    const canvas = document.getElementById("cardCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const bg = new Image();
+    const logo = new Image();
+
+    bg.crossOrigin = "anonymous";
+    logo.crossOrigin = "anonymous";
+
+    bg.src = BACKGROUND_IMAGE;
+    logo.src = LOGO_IMAGE;
+
+    bg.onload = generateCard;
+    logo.onload = generateCard;
+
+    bg.onerror = function () {
+      drawFallbackCard();
+    };
+
+    function drawFallbackCard() {
+      const name = document.getElementById("employeeName").value.trim() || "اسم الموظف";
+      const language = document.getElementById("language").value;
+
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, "#0f172a");
+      gradient.addColorStop(0.55, "#1d4ed8");
+      gradient.addColorStop(1, "#d4af37");
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(255,255,255,0.10)";
+      ctx.beginPath();
+      ctx.arc(1350, 180, 240, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(180, 850, 300, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawTextContent(name, language);
+    }
+
+    function generateCard() {
+      const name = document.getElementById("employeeName").value.trim() || "اسم الموظف";
+      const language = document.getElementById("language").value;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (bg.complete && bg.naturalWidth > 0) {
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+      } else {
+        drawFallbackCard();
+        return;
+      }
+
+      if (logo.complete && logo.naturalWidth > 0) {
+        ctx.drawImage(logo, 70, 60, 180, 90);
+      }
+
+      drawTextContent(name, language);
+    }
+
+    function drawTextContent(name, language) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (language === "ar") {
+        ctx.direction = "rtl";
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 78px Tahoma, Arial";
+        ctx.fillText("كل عام وأنتم بخير", canvas.width / 2, 360);
+
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 88px Tahoma, Arial";
+        ctx.fillText(name, canvas.width / 2, 505);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "36px Tahoma, Arial";
+        ctx.fillText("مع أطيب التمنيات من فريق الشركة", canvas.width / 2, 640);
+      } else {
+        ctx.direction = "ltr";
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 72px Arial";
+        ctx.fillText("Season's Greetings", canvas.width / 2, 360);
+
+        ctx.fillStyle = "#facc15";
+        ctx.font = "bold 86px Arial";
+        ctx.fillText(name, canvas.width / 2, 505);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "36px Arial";
+        ctx.fillText("With best wishes from our team", canvas.width / 2, 640);
+      }
+    }
+
+    function downloadCard() {
+      generateCard();
+
+      const name = document.getElementById("employeeName").value.trim() || "employee";
+      const safeName = name.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, "_");
+
+      const link = document.createElement("a");
+      link.download = `greeting-card-${safeName}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    document.getElementById("employeeName").addEventListener("input", generateCard);
+    document.getElementById("language").addEventListener("change", generateCard);
+
+    drawFallbackCard();
+  </script>
+</body>
+</html>
